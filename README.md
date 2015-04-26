@@ -1,12 +1,12 @@
-# Real-time Notification Server for Shuttle Tracking
+# Real-time Notification Server
 
-This service provides publishing, retrieval, and notification APIs for real-time notification.
+This service provides publishing, retrieval, and notification APIs for real-time notifications.
 
-This service is written in Java using the Dropwizard framework.
+It is a [JAX-RS](http://en.wikipedia.org/wiki/Java_API_for_RESTful_Web_Services) service written in Java using the [Dropwizard](http://dropwizard.io) framework.
 
-Notifications are persisted in Redis and sent over Redis PubSub.
+Notifications are persisted in [Redis](http://redis.io/) and sent to interested consumers over [Redis PubSub](http://redis.io/topics/pubsub).
 
-Consumers for WebSockets are coming soon.
+A WebSocket bridge is coming soon.
 
 ## Usage
 
