@@ -1,0 +1,14 @@
+{
+  "service": {
+    "name": "shuttle-notification-server",
+    "tags": ["shuttle-tracking"],
+    "port": 8080,
+    "check": {
+      "id": "health-check",
+      "name": "Dropwizard health check",
+      "http": "http://localhost:8081/healthcheck",
+      "interval": "10s",
+      "timeout": "1s"
+    }
+  }
+}

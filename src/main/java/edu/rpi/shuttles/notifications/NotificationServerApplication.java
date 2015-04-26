@@ -1,15 +1,12 @@
 package edu.rpi.shuttles.notifications;
 
 import com.bendb.dropwizard.redis.JedisBundle;
-import com.bendb.dropwizard.redis.JedisConfiguration;
 import com.bendb.dropwizard.redis.JedisFactory;
 import io.dropwizard.Application;
-import io.dropwizard.Configuration;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
 import edu.rpi.shuttles.notifications.resources.NotificationResource;
-import edu.rpi.shuttles.notifications.health.NotificationHealthCheck;
 
 public class NotificationServerApplication extends Application<NotificationServerConfiguration> {
   public static void main(String[] args) throws Exception {
