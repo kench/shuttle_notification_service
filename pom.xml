@@ -18,6 +18,21 @@
       <version>${dropwizard.version}</version>
     </dependency>
     <dependency>
+      <groupId>io.dropwizard.modules</groupId>
+      <artifactId>dropwizard-java8</artifactId>
+      <version>0.8.0-1</version>
+      </dependency>
+    <dependency>
+      <groupId>io.dropwizard.modules</groupId>
+      <artifactId>dropwizard-java8-auth</artifactId>
+      <version>0.8.0-1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.dropwizard.modules</groupId>
+      <artifactId>dropwizard-java8-jdbi</artifactId>
+      <version>0.8.0-1</version>
+    </dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.0</version>
@@ -48,10 +63,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
-        <!-- compile for Java 1.7 -->
+        <!-- compile for Java 1.8 -->
         <configuration>
-          <source>1.7</source>
-          <target>1.7</target>
+          <source>1.8</source>
+          <target>1.8</target>
           <encoding>UTF-8</encoding>
         </configuration>
       </plugin>

@@ -3,6 +3,7 @@ package edu.rpi.shuttles.notifications;
 import com.bendb.dropwizard.redis.JedisBundle;
 import com.bendb.dropwizard.redis.JedisFactory;
 import io.dropwizard.Application;
+import io.dropwizard.java8.Java8Bundle;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 
@@ -20,6 +21,7 @@ public class NotificationServerApplication extends Application<NotificationServe
 
   @Override
   public void initialize(Bootstrap<NotificationServerConfiguration> bootstrap) {
+    bootstrap.addBundle(new Java8Bundle());
     bootstrap.addBundle(new JedisBundle<NotificationServerConfiguration>() {
       @Override
       public JedisFactory getJedisFactory(NotificationServerConfiguration configuration) {
