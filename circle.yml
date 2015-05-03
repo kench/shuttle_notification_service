@@ -6,5 +6,4 @@ deployment:
   staging:
     branch: master
     commands:
-      - mvn package
       - cp target/shuttle-notifications-*.jar $CIRCLE_ARTIFACTS
