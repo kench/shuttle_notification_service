@@ -9,8 +9,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import lombok.Setter;
 
-import java.util.ArrayList;
 import java.util.Date;
+
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -27,6 +27,7 @@ public class Notification {
   @Setter
   @JsonProperty
   private String content;
+  @Getter
   @Setter
   @JsonProperty
   private JsonNode payload;

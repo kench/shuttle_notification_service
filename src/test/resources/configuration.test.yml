@@ -1,0 +1,2 @@
+redis:
+  endpoint: localhost:6379

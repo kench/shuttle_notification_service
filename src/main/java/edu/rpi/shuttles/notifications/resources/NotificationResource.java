@@ -7,7 +7,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
-import java.util.Calendar;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 
 import lombok.NoArgsConstructor;
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.primitives.Ints;
+import jersey.repackaged.com.google.common.base.Objects;
 import org.apache.commons.lang3.RandomStringUtils;
 import redis.clients.jedis.Jedis;
 
@@ -27,8 +30,9 @@ import edu.rpi.shuttles.notifications.core.Notification;
 
 @Slf4j
 @NoArgsConstructor
-@Path("/notifications")
+@Path("/notifications/")
 @Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
 public class NotificationResource {
   private static final Integer DEFAULT_NOTIFICATION_TTL = 86400;
 
@@ -55,9 +59,9 @@ public class NotificationResource {
           response = Response.status(Response.Status.NOT_FOUND).entity(String.format("No notification found for [id=%s]", notificationId.get())).build();
         } else {
           notification = objectMapper.readValue(notificationData, Notification.class);
-          response = Response.status(Response.Status.FOUND).entity(notification).build();
+          response = Response.status(Response.Status.OK).entity(notification).build();
         }
-      } catch (Exception exception) {
+      } catch (final Exception exception) {
         throw new RuntimeException(exception);
       }
 
@@ -65,25 +69,61 @@ public class NotificationResource {
   }
 
   @PUT
+  @Path("/{id}")
+  @Timed
+  public Response updateNotification(@Valid Notification notification, @PathParam("id") Optional<String> notificationId, @Context Jedis jedis) {
+    final Response response;
+    final Notification currentNotification;
+    final String currentNotificationData;
+    final String newNotificationData;
+
+    try {
+      currentNotificationData = jedis.get("Notification:" + notificationId.get());
+
+      if (Strings.isNullOrEmpty(currentNotificationData)) {
+        response = Response.status(Response.Status.NOT_FOUND).entity(String.format("No notification found for [id=%s]", notificationId.get())).build();
+      } else {
+        currentNotification = objectMapper.readValue(currentNotificationData, Notification.class);
+
+        notification.setId(currentNotification.getId());
+        notification.setTtl(Objects.firstNonNull(notification.getTtl(), currentNotification.getTtl()));
+        newNotificationData = objectMapper.writeValueAsString(notification);
+
+        jedis.set("Notification:" + notificationId.get(), newNotificationData);
+
+        response = Response.status(Response.Status.OK).entity(notification).build();
+      }
+    } catch (final Exception exception) {
+      throw new RuntimeException(exception);
+    }
+
+    return response;
+  }
+
+  @PUT
   @Path("/")
   @Timed
   public Response createNotification(@Valid Notification notification, @QueryParam("topic") Optional<String> topic, @Context Jedis jedis) {
     final String identifier;
-    final Calendar defaultTimeToLive;
     final String notificationData;
-    final Date timeToLive;
+    final LocalDateTime currentTime;
+    final LocalDateTime timeToLive;
     final Integer timeToLiveSeconds;
     final Timer.Context writeTimerContext;
 
+    currentTime = LocalDateTime.now();
     identifier = generatePseudorandomIdentifier();
+
     notification.setId(identifier);
     if (notification.getTtl() == null) {
-      defaultTimeToLive = Calendar.getInstance();
-      defaultTimeToLive.add(Calendar.SECOND, DEFAULT_NOTIFICATION_TTL);
-      notification.setTtl(defaultTimeToLive.getTime());
+      timeToLive = currentTime;
+      timeToLive.plusSeconds(DEFAULT_NOTIFICATION_TTL);
+      notification.setTtl(Date.from(timeToLive.atZone(ZoneId.systemDefault()).toInstant()));
+      timeToLiveSeconds = DEFAULT_NOTIFICATION_TTL;
+    } else {
+      timeToLive = LocalDateTime.ofInstant(notification.getTtl().toInstant(), ZoneId.systemDefault());
+      timeToLiveSeconds = Ints.checkedCast(currentTime.until(timeToLive, ChronoUnit.SECONDS));
     }
-    // TODO: Rip this out once this is migrated to Java 8.
-    timeToLiveSeconds = Ints.checkedCast((notification.getTtl().getTime() - new Date().getTime()) / 1000);
 
     try {
       notificationData = objectMapper.writeValueAsString(notification);
@@ -96,14 +136,16 @@ public class NotificationResource {
     }
 
     try {
-      jedis.publish(topic.get(), notificationData);
+      if (topic.isPresent()) {
+        jedis.publish(topic.get(), notificationData);
+      }
     } catch (RuntimeException exception) {
       log.error(
         String.format("Encountered failure when publishing notification [id=%s] to topic [%s]", identifier, topic.get()),
         exception);
     }
 
-    return Response.created(UriBuilder.fromResource(NotificationResource.class).build(identifier)).build();
+    return Response.created(UriBuilder.fromResource(NotificationResource.class).path(NotificationResource.class, "getNotification").build(identifier)).build();
   }
 
   private String generatePseudorandomIdentifier() {
