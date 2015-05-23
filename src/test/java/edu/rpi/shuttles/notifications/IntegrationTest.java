@@ -23,6 +23,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
+import redis.clients.jedis.Jedis;
 
 import edu.rpi.shuttles.notifications.core.Notification;
 
@@ -31,9 +32,12 @@ public class IntegrationTest {
   private static final String DEFAULT_NOTIFICATION_TITLE = "Test Notification Title";
   private static final String DEFAULT_NOTIFICATION_MESSAGE = "I'm the bat!";
   private static final long DEFAULT_TIME_TO_LIVE = 5;
+  private static final String REDIS_HOST = "localhost";
+  private static final String REDIS_TOPIC = "DeliveryQueue:Notifications";
   private static final String UPDATE_NOTIFICATION_MESSAGE = "Fool, I'm the bat!";
 
   private Client client;
+  private Jedis jedis;
 
   @ClassRule
   public static final DropwizardAppRule<NotificationServerConfiguration> RULE = new DropwizardAppRule<>(
@@ -42,11 +46,14 @@ public class IntegrationTest {
   @Before
   public void setup() {
     client = ClientBuilder.newClient();
+    jedis = new Jedis(REDIS_HOST);
   }
 
   @After
   public void tearDown() {
     client.close();
+    jedis.del(REDIS_TOPIC);
+    jedis.close();
   }
 
   @Test
@@ -63,6 +70,7 @@ public class IntegrationTest {
     assertNotNull(newNotification.getId());
     assertEquals(newNotification.getTitle(), DEFAULT_NOTIFICATION_TITLE);
     assertEquals(newNotification.getContent(), DEFAULT_NOTIFICATION_MESSAGE);
+    assertEquals(newNotification.getId(), jedis.rpop(REDIS_TOPIC));
   }
 
   @Test

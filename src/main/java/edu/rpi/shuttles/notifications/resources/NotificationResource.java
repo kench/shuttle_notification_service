@@ -135,20 +135,32 @@ public class NotificationResource {
       throw new RuntimeException(exception);
     }
 
-    try {
-      if (topic.isPresent()) {
-        jedis.publish(topic.get(), notificationData);
-      }
-    } catch (RuntimeException exception) {
-      log.error(
-        String.format("Encountered failure when publishing notification [id=%s] to topic [%s]", identifier, topic.get()),
-        exception);
-    }
+    publishNotification(topic, identifier, notificationData, jedis);
 
     return Response.created(UriBuilder.fromResource(NotificationResource.class).path(NotificationResource.class, "getNotification").build(identifier)).build();
   }
 
   private String generatePseudorandomIdentifier() {
     return String.valueOf(System.currentTimeMillis()) + "-" + RandomStringUtils.randomAlphanumeric(8);
+  }
+
+  private void publishNotification(final Optional<String> topic, final String notificationId, final String notification, final Jedis jedis) {
+    try {
+      jedis.lpush("DeliveryQueue:Notifications", notificationId);
+    } catch (RuntimeException exception) {
+      log.error(
+        String.format("Unable to enqueue notification [id=%s] for delivery", notificationId),
+        exception);
+    }
+
+    try {
+      if (topic.isPresent()) {
+        jedis.publish(topic.get(), notification);
+      }
+    } catch (RuntimeException exception) {
+      log.error(
+        String.format("Encountered failure when publishing notification [id=%s] to topic [%s]", notificationId, topic.get()),
+        exception);
+    }
   }
 }
